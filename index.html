@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Days Off Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --off: #34D399; --off-bg: rgba(52,211,153,0.13); --off-text: #6EE7B7; --off-glow: rgba(52,211,153,0.25);
+    --on: #94A3B8; --on-bg: rgba(148,163,184,0.08); --on-text: #64748B;
+    --bg-deep: #0C0F1A; --bg: #111827; --bg-card: #1F2937; --bg-card-hover: #283548;
+    --bg-elevated: #374151; --bg-surface: rgba(255,255,255,0.04);
+    --text: #F9FAFB; --text-secondary: #D1D5DB; --text-muted: #6B7280; --text-dim: #4B5563;
+    --accent: #818CF8; --accent-pink: #F472B6; --border: rgba(255,255,255,0.08);
+    --radius: 12px; --radius-lg: 16px; --radius-xl: 20px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    background:var(--bg-deep); color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  }
+  body::before {
+    content:''; position:fixed;
+    top:0; right:0; bottom:0; left:0;
+    pointer-events:none; z-index:0;
+    background:
+      radial-gradient(ellipse at 20% 0%,rgba(129,140,248,0.08) 0%,transparent 50%),
+      radial-gradient(ellipse at 80% 100%,rgba(244,114,182,0.06) 0%,transparent 50%),
+      radial-gradient(ellipse at 50% 50%,rgba(52,211,153,0.04) 0%,transparent 60%);
+  }
+  .app { position:relative; z-index:1; max-width:640px; margin:0 auto; padding:0 16px 80px; }
+
+  /* ── Header ── */
+  .header { text-align:center; padding:40px 0 24px; }
+  .header h1 { font-family:'Playfair Display',serif; font-size:32px; font-weight:800; }
+  .header-sub { color:var(--text-muted); font-size:13px; font-weight:500; margin-top:4px; }
+
+  /* ── Hero ── */
+  .hero {
+    background:linear-gradient(135deg,rgba(52,211,153,0.1),rgba(52,211,153,0.03));
+    border:1px solid var(--off-glow); border-radius:var(--radius-xl);
+    padding:28px 24px; margin:0 0 28px; text-align:center;
+    position:relative; overflow:hidden; box-shadow:0 0 30px rgba(52,211,153,0.12);
+  }
+  .hero::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--off),transparent); }
+  .hero-label { font-size:10px; text-transform:uppercase; letter-spacing:2.5px; color:var(--off); font-weight:800; margin-bottom:12px; }
+  .hero-dates { font-family:'Playfair Display',serif; font-size:28px; font-weight:800; }
+  .hero-sub { font-size:14px; color:var(--text-secondary); margin-top:10px; }
+  .hero-sub span { color:var(--off); font-weight:800; }
+  .hero-meta { display:inline-flex; align-items:center; gap:6px; margin-top:14px; background:var(--off-bg); padding:8px 18px; border-radius:20px; font-size:12px; color:var(--off-text); font-weight:700; }
+
+  /* ── Section Titles ── */
+  .stitle { font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin:32px 0 14px 2px; display:flex; align-items:center; gap:10px; }
+  .stitle::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── Cards ── */
+  .cards { display:grid; gap:10px; }
+  .card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:16px 18px; display:flex; align-items:center; gap:14px;
+    position:relative; overflow:hidden;
+    -webkit-transition:all 0.2s; transition:all 0.2s;
+  }
+  .card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--off); border-radius:0 2px 2px 0; }
+  .card:hover { background:var(--bg-card-hover); border-color:rgba(52,211,153,0.2); }
+  .card.now { border-color:var(--off-glow); background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(52,211,153,0.02)); box-shadow:0 0 30px rgba(52,211,153,0.12); }
+  .card.now::before { width:4px; box-shadow:0 0 8px var(--off); }
+  .card-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; background:var(--off-bg); }
+  .card-info { flex:1; min-width:0; }
+  .card-dates { font-size:15px; font-weight:700; margin-bottom:4px; }
+  .card-detail { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .tag { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; background:var(--bg-surface); color:var(--text-muted); }
+  .tag.wk { background:rgba(244,114,182,0.12); color:var(--accent-pink); }
+  .tag.now { background:rgba(52,211,153,0.15); color:var(--off-text); }
+  .card-badge { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:800; flex-shrink:0; background:var(--off-bg); color:var(--off-text); }
+  .card.now .card-badge { background:var(--off); color:var(--bg-deep); }
+
+  /* ── More Button ── */
+  .more-wrap { text-align:center; margin-top:16px; }
+  .more-btn {
+    display:inline-flex; align-items:center; gap:8px; padding:12px 28px; border-radius:30px;
+    background:var(--bg-card); border:1px solid var(--border); color:var(--text-secondary);
+    font-size:13px; font-weight:700; font-family:inherit; cursor:pointer;
+    -webkit-transition:all 0.2s; transition:all 0.2s;
+  }
+  .more-btn:hover { background:var(--bg-card-hover); border-color:var(--accent); color:var(--text); }
+  .more-btn:active { -webkit-transform:scale(0.96); transform:scale(0.96); }
+  .range-info { text-align:center; font-size:11px; color:var(--text-dim); margin-top:10px; font-weight:500; }
+
+  /* ── Calendar Nav ── */
+  .cal-nav { display:flex; align-items:center; justify-content:space-between; margin:0 0 14px; }
+  .cal-nav button {
+    background:var(--bg-card); border:1px solid var(--border); color:var(--text);
+    width:40px; height:40px; border-radius:10px; font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-transition:all 0.15s; transition:all 0.15s;
+  }
+  .cal-nav button:hover { background:var(--bg-elevated); }
+  .cal-nav button:active { -webkit-transform:scale(0.92); transform:scale(0.92); }
+  .cal-month-label { font-family:'Playfair Display',serif; font-size:22px; font-weight:800; }
+  .cal-year { color:var(--text-muted); font-family:'Inter',sans-serif; font-size:14px; font-weight:400; }
+
+  /* ── Calendar Grid ── */
+  .cal-scroll {
+    width:calc(100% + 32px); margin-left:-16px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding:0 16px 10px;
+    scrollbar-width:thin; scrollbar-color:var(--bg-elevated) transparent;
+  }
+  .cal-scroll::-webkit-scrollbar { height:4px; }
+  .cal-scroll::-webkit-scrollbar-track { background:transparent; }
+  .cal-scroll::-webkit-scrollbar-thumb { background:var(--bg-elevated); border-radius:4px; }
+  .cal {
+    display:grid; grid-template-rows:auto auto; gap:0;
+    min-width:-webkit-max-content; min-width:max-content;
+  }
+  .cal-date {
+    min-width:52px; padding:8px 4px; text-align:center;
+    font-size:11px; font-weight:700; color:var(--text-muted);
+    white-space:nowrap; letter-spacing:-0.2px;
+  }
+  .cal-date.wknd { color:var(--accent-pink); }
+  .cal-date.today-col { color:var(--text); }
+  .cal-status { min-width:52px; padding:4px 4px 8px; text-align:center; }
+  .cal-pill {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:44px; height:30px; border-radius:8px;
+    font-size:10px; font-weight:800; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer;
+    -webkit-transition:all 0.12s; transition:all 0.12s;
+    border:2px solid transparent;
+  }
+  .cal-pill:active { -webkit-transform:scale(0.9); transform:scale(0.9); }
+  .cal-pill.off { background:var(--off-bg); color:var(--off-text); border-color:rgba(52,211,153,0.2); }
+  .cal-pill.on { background:var(--on-bg); color:var(--on-text); border-color:rgba(148,163,184,0.08); }
+  .cal-pill.off.wknd { background:rgba(52,211,153,0.22); color:#5EEAD4; border-color:rgba(52,211,153,0.4); box-shadow:0 0 8px rgba(52,211,153,0.15); }
+  .cal-pill.today { box-shadow:0 0 0 2.5px #EF4444; }
+  .cal-legend { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .cal-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); background:var(--bg-card); padding:6px 12px; border-radius:16px; font-weight:600; border:1px solid var(--border); }
+  .cal-legend-dot { width:10px; height:10px; border-radius:4px; }
+
+  /* ── Settings Gear ── */
+  .gear {
+    position:fixed; top:16px; right:16px; z-index:90;
+    width:42px; height:42px; border-radius:50%; background:var(--bg-card);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:17px; color:var(--text-muted);
+    -webkit-transition:all 0.2s; transition:all 0.2s;
+  }
+  .gear:hover { background:var(--bg-elevated); color:var(--text); }
+
+  /* ── Overlay + Drawer ── */
+  .ov {
+    position:fixed; top:0; right:0; bottom:0; left:0;
+    background:rgba(0,0,0,0.5);
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    z-index:199; opacity:0; pointer-events:none;
+    -webkit-transition:opacity 0.3s; transition:opacity 0.3s;
+  }
+  .ov.open { opacity:1; pointer-events:all; }
+  .dw {
+    position:fixed; top:0; right:-400px;
+    width:88vw; max-width:360px; height:100vh;
+    background:var(--bg); z-index:200; box-shadow:0 10px 25px -5px rgba(0,0,0,0.4);
+    -webkit-transition:right 0.35s cubic-bezier(0.4,0,0.2,1); transition:right 0.35s cubic-bezier(0.4,0,0.2,1);
+    overflow-y:auto; padding:24px 20px; border-left:1px solid var(--border);
+  }
+  .dw.open { right:0; }
+  .dw-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+  .dw-head h2 { font-size:18px; font-weight:800; }
+  .dw-x { width:36px; height:36px; border-radius:50%; background:var(--bg-card); border:none; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-muted); -webkit-transition:all 0.15s; transition:all 0.15s; }
+  .dw-x:hover { background:var(--bg-elevated); color:var(--text); }
+  .fld { margin-bottom:18px; }
+  .fld label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text-muted); font-weight:700; margin-bottom:6px; }
+  .fld input { width:100%; padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text); font-size:14px; font-weight:600; font-family:inherit; outline:none; -webkit-transition:border-color 0.2s; transition:border-color 0.2s; -webkit-appearance:none; }
+  .fld input:focus { border-color:var(--accent); }
+  .btn-save { width:100%; padding:14px; border-radius:var(--radius); border:none; background:linear-gradient(135deg,var(--accent),var(--accent-pink)); color:white; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:8px; -webkit-transition:all 0.15s; transition:all 0.15s; }
+  .btn-save:active { -webkit-transform:scale(0.97); transform:scale(0.97); }
+  .cyc-preview { margin-top:16px; padding:14px; background:var(--bg-deep); border-radius:10px; border:1px solid var(--border); }
+  .cyc-title { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); font-weight:700; margin-bottom:8px; }
+  .cyc-pills { display:flex; gap:4px; flex-wrap:wrap; }
+  .cyc-p { width:28px; height:22px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:800; }
+  .cyc-p.m { background:rgba(245,158,11,0.2); color:#FBBF24; }
+  .cyc-p.e { background:rgba(167,139,250,0.2); color:#C4B5FD; }
+  .cyc-p.n { background:rgba(96,165,250,0.2); color:#93C5FD; }
+  .cyc-p.o { background:var(--off-bg); color:var(--off-text); }
+
+  /* ── Popup ── */
+  .pop-bg {
+    position:fixed; top:0; right:0; bottom:0; left:0;
+    background:rgba(0,0,0,0.5);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    z-index:300; display:none; align-items:flex-end; justify-content:center; padding:16px;
+  }
+  .pop-bg.show { display:-webkit-flex; display:flex; }
+  .pop {
+    background:var(--bg-card); border-radius:var(--radius-xl) var(--radius-xl) var(--radius-lg) var(--radius-lg);
+    padding:28px 24px 24px; width:100%; max-width:420px; position:relative;
+    -webkit-animation:popUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    animation:popUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow:0 10px 25px -5px rgba(0,0,0,0.4); border:1px solid var(--border);
+  }
+  @-webkit-keyframes popUp { from{-webkit-transform:translateY(60px) scale(0.95);opacity:0} to{-webkit-transform:translateY(0) scale(1);opacity:1} }
+  @keyframes popUp { from{transform:translateY(60px) scale(0.95);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
+  .pop-handle { width:40px; height:4px; background:var(--bg-elevated); border-radius:2px; margin:0 auto 20px; }
+  .pop-date { font-family:'Playfair Display',serif; font-size:22px; font-weight:800; margin-bottom:8px; }
+  .pop-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; margin-bottom:16px; }
+  .pop-badge.off { background:var(--off-bg); color:var(--off-text); }
+  .pop-badge.on { background:rgba(148,163,184,0.12); color:#94A3B8; }
+  .pop-rows { margin-top:4px; }
+  .pop-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .pop-row:last-child { border-bottom:none; }
+  .pop-row-l { color:var(--text-muted); font-weight:500; }
+  .pop-row-v { font-weight:700; }
+  .pop-x { position:absolute; top:16px; right:16px; background:var(--bg-elevated); border:none; color:var(--text-muted); width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-transition:all 0.15s; transition:all 0.15s; }
+  .pop-x:hover { background:var(--border); color:var(--text); }
+
+  /* ── Error Banner ── */
+  .err-banner {
+    background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3);
+    border-radius:12px; padding:16px 20px; margin:0 0 20px; text-align:center;
+    color:#FCA5A5; font-size:13px; font-weight:600; display:none;
+  }
+  .err-banner.show { display:block; }
+
+  /* ── Noscript ── */
+  .ns-msg {
+    background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3);
+    border-radius:12px; padding:24px; margin:20px 16px; text-align:center;
+    color:#FCA5A5; font-size:14px; font-weight:600;
+  }
+
+  /* ── Responsive ── */
+  @media(min-width:640px) {
+    .header h1{font-size:38px} .hero-dates{font-size:32px}
+    .cal-date{min-width:56px} .cal-pill{width:48px;height:32px;font-size:11px}
+  }
+  @media(max-width:380px) {
+    .header h1{font-size:26px}
+    .cal-date{min-width:42px;font-size:10px} .cal-pill{width:36px;height:26px;font-size:9px}
+  }
+</style>
+</head>
+<body>
+
+<noscript>
+  <div class="ns-msg">
+    <p style="font-size:20px;margin-bottom:12px">⚠️ JavaScript Required</p>
+    <p>This app needs JavaScript to run. Please open in <strong>Safari</strong> or <strong>Chrome</strong>.</p>
+    <p style="margin-top:12px;font-size:12px;color:#6B7280">Tip: Tap Share → "Open in Safari"</p>
+  </div>
+</noscript>
+
+<button class="gear" onclick="openDw()">⚙️</button>
+<div class="ov" id="ov" onclick="closeDw()"></div>
+<div class="dw" id="dw">
+  <div class="dw-head">
+    <h2>⚙️ Settings</h2>
+    <button class="dw-x" onclick="closeDw()">✕</button>
+  </div>
+  <div class="fld">
+    <label>Cycle Start Date (1st Morning)</label>
+    <input type="date" id="inAnchor"/>
+  </div>
+  <div class="fld">
+    <label>Night Shift Ends At</label>
+    <input type="time" id="inNightEnd" value="06:00"/>
+  </div>
+  <button class="btn-save" onclick="save()">💾 Save & Refresh</button>
+  <div class="cyc-preview">
+    <div class="cyc-title">10-Day Cycle (from anchor date onward)</div>
+    <div class="cyc-pills">
+      <div class="cyc-p m">M</div><div class="cyc-p m">M</div>
+      <div class="cyc-p e">E</div><div class="cyc-p e">E</div>
+      <div class="cyc-p n">N</div><div class="cyc-p n">N</div>
+      <div class="cyc-p o">OFF</div><div class="cyc-p o">OFF</div><div class="cyc-p o">OFF</div><div class="cyc-p o">OFF</div>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--text-dim)">Before this date → hardcoded manual schedule</div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <h1>✈️ When Am I Free?</h1>
+    <p class="header-sub">6 on · 4 off · repeat forever</p>
+  </div>
+
+  <div class="err-banner" id="errBanner"></div>
+  <div class="hero" id="hero"><div class="hero-label">Loading...</div></div>
+
+  <div class="stitle">🗓️ Upcoming Days Off</div>
+  <div class="cards" id="cards"></div>
+  <div class="more-wrap">
+    <button class="more-btn" onclick="more()">📅 Show More</button>
+    <div class="range-info" id="rangeInfo"></div>
+  </div>
+
+  <div class="stitle" style="margin-top:36px">📊 Monthly Calendar</div>
+  <div class="cal-nav">
+    <button onclick="nav(-1)">‹</button>
+    <div class="cal-month-label" id="mLabel"></div>
+    <button onclick="nav(1)">›</button>
+  </div>
+  <div class="cal-scroll" id="calScroll">
+    <div class="cal" id="cal"></div>
+  </div>
+  <div class="cal-legend">
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--off)"></div>OFF</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--on)"></div>Working</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#EF4444;width:8px;height:8px;border:2px solid #EF4444;border-radius:50%"></div>Today</div>
+  </div>
+</div>
+
+<div class="pop-bg" id="popBg" onclick="closePop(event)">
+  <div class="pop">
+    <div class="pop-handle"></div>
+    <button class="pop-x" onclick="document.getElementById('popBg').classList.remove('show')">✕</button>
+    <div id="popBody"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   DAYS OFF PLANNER — Consolidated & Safari-Hardened
+   ═══════════════════════════════════════════════════════════════
+   EDIT GUIDE:
+   ─────────────────────────────────────────────────────────────
+   🔧 TO CHANGE YOUR SCHEDULE:
+      1. Edit HARDCODED_WORK below (add/remove working days)
+      2. Change cfg.anchor to your first Morning shift date
+      3. The 10-day CYCLE auto-repeats from anchor onward
+
+   🔧 TO ADD WORKING DAYS BEFORE THE CYCLE:
+      Add entries like: '2026-07-15':1
+      to the HARDCODED_WORK object below.
+
+   🔧 TO CHANGE THE CYCLE PATTERN:
+      Edit the CYCLE array. Current = M M E E N N OFF OFF OFF OFF
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── CONFIG (edit these!) ── */
+var CYCLE = ['morning','morning','evening','evening','night','night','off','off','off','off'];
+var cfg = { anchor: '2026-06-08', nightEnd: '06:00' };
+
+/* ── HARDCODED WORKING DAYS (before cycle starts) ──
+   Everything NOT listed here (before anchor) = OFF */
+var HARDCODED_WORK = {
+  '2026-04-23':1, '2026-04-24':1,
+  '2026-04-27':1, '2026-04-28':1, '2026-04-29':1, '2026-04-30':1,
+  '2026-05-01':1,
+  '2026-05-04':1, '2026-05-05':1, '2026-05-06':1, '2026-05-07':1, '2026-05-08':1,
+  '2026-05-11':1, '2026-05-12':1, '2026-05-13':1, '2026-05-14':1,
+  '2026-05-25':1, '2026-05-26':1,
+  '2026-05-29':1, '2026-05-30':1, '2026-05-31':1,
+  '2026-06-01':1, '2026-06-02':1, '2026-06-03':1
+};
+
+/* ── CONSTANTS ── */
+var vY, vM, shown = 8;
+var MO  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var MO3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DWF = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+/* ═══════════════════════════════════════════════════
+   SAFE UTILITIES (Safari/WebView compatible)
+   ═══════════════════════════════════════════════════ */
+
+/* Safari-safe date parsing — NEVER use new Date('YYYY-MM-DD') */
+function parseDate(str) {
+  if (!str || typeof str !== 'string') return null;
+  var p = str.split('-');
+  if (p.length !== 3) return null;
+  var y = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, d = parseInt(p[2], 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return new Date(y, m, d);
+}
+
+function toKey(dt) {
+  var y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate();
+  return y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
+}
+
+function daysBetween(a, b) {
+  var msA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  var msB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((msB - msA) / 86400000);
+}
+
+function addDays(dt, n) {
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + n);
+}
+
+/* Safe localStorage (fails silently in Private Browsing / WebViews) */
+function sGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+function sSet(k, v) { try { localStorage.setItem(k, v); } catch(e) { /* silent */ } }
+
+function showError(msg, detail) {
+  var el = document.getElementById('errBanner');
+  if (el) {
+    el.innerHTML = '⚠️ ' + msg + (detail ? '<br><span style="font-size:11px;color:#6B7280">' + detail + '</span>' : '');
+    el.className = 'err-banner show';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   CORE LOGIC
+   ═══════════════════════════════════════════════════ */
+
+function shift(d) {
+  var anchor = parseDate(cfg.anchor);
+  if (!anchor) return 'off';
+  var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var diff = daysBetween(anchor, t);
+  if (diff >= 0) {
+    var i = ((diff % 10) + 10) % 10; /* safe modulo */
+    return CYCLE[i];
+  }
+  /* Before anchor → hardcoded lookup */
+  return HARDCODED_WORK[toKey(t)] ? 'working' : 'off';
+}
+
+function free(d)  { return shift(d) === 'off'; }
+function wknd(d)  { var w = d.getDay(); return w === 0 || w === 6; }
+function fs(d)    { return d.getDate() + ' ' + MO3[d.getMonth()]; }
+function ff(d)    { return DWF[d.getDay()] + ', ' + d.getDate() + ' ' + MO[d.getMonth()] + ' ' + d.getFullYear(); }
+
+/* Find off-day blocks with safety limits */
+function blocks(max) {
+  var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  var b = [], i = 0, MAX_SCAN = 400, MAX_BLOCK = 200;
+
+  while (b.length < max && i < MAX_SCAN) {
+    var dt = addDays(today, i);
+    if (free(dt)) {
+      var s = new Date(dt.getTime()), e = new Date(dt.getTime()), bLen = 0;
+      while (bLen < MAX_BLOCK && free(addDays(e, 1))) { e = addDays(e, 1); bLen++; }
+
+      var days = daysBetween(s, e) + 1;
+      var du = Math.max(0, daysBetween(today, s));
+      var cur = (today >= s && today <= e);
+      var wk = 0, wd = new Date(s.getTime()), wc = 0;
+      while (wd <= e && wc < MAX_BLOCK + 5) { if (wknd(wd)) wk++; wd = addDays(wd, 1); wc++; }
+      var ps = shift(addDays(s, -1));
+      b.push({ s:s, e:e, days:days, du:du, cur:cur, wk:wk, ps:ps });
+      i = daysBetween(today, e) + 1;
+    } else { i++; }
+  }
+  return b;
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT / SAVE / DRAWER
+   ═══════════════════════════════════════════════════ */
+
+function init() {
+  var s = sGet('doCfg');
+  if (s) { try { Object.assign(cfg, JSON.parse(s)); } catch(e) {} }
+  if (!parseDate(cfg.anchor)) cfg.anchor = '2026-06-08';
+
+  var ai = document.getElementById('inAnchor'), ni = document.getElementById('inNightEnd');
+  if (ai) ai.value = cfg.anchor;
+  if (ni) ni.value = cfg.nightEnd;
+
+  var n = new Date(); vY = n.getFullYear(); vM = n.getMonth();
+  render();
+}
+
+function save() {
+  var ai = document.getElementById('inAnchor'), ni = document.getElementById('inNightEnd');
+  if (ai) cfg.anchor = ai.value;
+  if (ni) cfg.nightEnd = ni.value;
+  if (!parseDate(cfg.anchor)) { cfg.anchor = '2026-06-08'; if (ai) ai.value = cfg.anchor; }
+  sSet('doCfg', JSON.stringify(cfg));
+  closeDw(); render();
+}
+
+function openDw()  { var d=document.getElementById('dw'),o=document.getElementById('ov'); if(d)d.classList.add('open'); if(o)o.classList.add('open'); }
+function closeDw() { var d=document.getElementById('dw'),o=document.getElementById('ov'); if(d)d.classList.remove('open'); if(o)o.classList.remove('open'); }
+
+/* ═══════════════════════════════════════════════════
+   RENDERERS
+   ═══════════════════════════════════════════════════ */
+
+function render() {
+  try { rHero(); }  catch(e) { showError('Hero failed', e.message); }
+  try { rCards(); } catch(e) { showError('Cards failed', e.message); }
+  try { rCal(); }   catch(e) { showError('Calendar failed', e.message); }
+}
+
+function rHero() {
+  var bl = blocks(2), el = document.getElementById('hero');
+  if (!el) return;
+  if (!bl.length) { el.innerHTML = '<div class="hero-label">No off days found</div>'; return; }
+  var b = bl[0];
+  var note = (b.ps === 'night') ? 'Free from ' + cfg.nightEnd + ' on ' + fs(b.s) : b.days + ' full days free';
+  el.innerHTML =
+    '<div class="hero-label">' + (b.cur ? '🎉 You\'re OFF right now!' : '🎯 Next Days Off') + '</div>' +
+    '<div class="hero-dates">' + fs(b.s) + ' → ' + fs(b.e) + '</div>' +
+    '<div class="hero-sub">' + (b.du > 0 ? 'In <span>' + b.du + ' day' + (b.du > 1 ? 's' : '') + '</span>' : '✨ Enjoy!') + '</div>' +
+    '<div class="hero-meta">🕐 ' + note + (b.wk > 0 ? ' · 🏖️ incl. ' + b.wk + ' weekend day' + (b.wk > 1 ? 's' : '') : '') + '</div>';
+}
+
+function rCards() {
+  var bl = blocks(shown), el = document.getElementById('cards');
+  if (!el) return;
+  if (!bl.length) { el.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:20px">Nothing found</p>'; return; }
+  var html = '';
+  for (var idx = 0; idx < bl.length; idx++) {
+    var b = bl[idx];
+    var ic = b.days >= 5 ? '✈️' : b.days >= 4 ? '🧳' : b.wk > 0 ? '🌴' : '🏖️';
+    var tn = (b.ps === 'night') ? 'Free from ' + cfg.nightEnd : 'Free all day';
+    html += '<div class="card' + (b.cur ? ' now' : '') + '">' +
+      '<div class="card-icon">' + ic + '</div>' +
+      '<div class="card-info">' +
+        '<div class="card-dates">' + fs(b.s) + ' → ' + fs(b.e) + '</div>' +
+        '<div class="card-detail">' + tn +
+          (b.wk > 0 ? ' <span class="tag wk">🏖️ ' + b.wk + ' wknd</span>' : '') +
+          (b.du > 0 ? ' <span class="tag">in ' + b.du + 'd</span>' : ' <span class="tag now">NOW</span>') +
+        '</div>' +
+      '</div>' +
+      '<div class="card-badge">' + b.days + 'd off</div>' +
+    '</div>';
+  }
+  el.innerHTML = html;
+  var last = bl[bl.length - 1];
+  var ri = document.getElementById('rangeInfo');
+  if (ri) ri.textContent = bl.length + ' off periods · through ' + fs(last.e);
+}
+
+function more() { shown += 8; rCards(); }
+
+function rCal() {
+  var ml = document.getElementById('mLabel'), g = document.getElementById('cal');
+  if (!ml || !g) return;
+  ml.innerHTML = MO[vM] + ' <span class="cal-year">' + vY + '</span>';
+
+  var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  var dim = new Date(vY, vM + 1, 0).getDate(), h = '';
+
+  for (var d = 1; d <= dim; d++) {
+    var dt = new Date(vY, vM, d), w = wknd(dt), isT = (dt.getTime() === today.getTime());
+    h += '<div class="cal-date' + (w ? ' wknd' : '') + (isT ? ' today-col' : '') + '">' + MO3[vM] + ' ' + d + '</div>';
+  }
+  for (var d2 = 1; d2 <= dim; d2++) {
+    var dt2 = new Date(vY, vM, d2), off = free(dt2), isT2 = (dt2.getTime() === today.getTime()), w2 = wknd(dt2);
+    var cls = off ? 'off' : 'on';
+    if (off && w2) cls = 'off wknd';
+    if (isT2) cls += ' today';
+    h += '<div class="cal-status"><div class="cal-pill ' + cls + '" onclick="tap(' + vY + ',' + vM + ',' + d2 + ')">' + (off ? 'OFF' : 'ON') + '</div></div>';
+  }
+  g.innerHTML = h;
+  g.style.gridTemplateColumns = 'repeat(' + dim + ',1fr)';
+
+  if (vY === today.getFullYear() && vM === today.getMonth()) {
+    setTimeout(function() {
+      try {
+        var tp = g.querySelector('.today');
+        if (tp) { try { tp.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'}); } catch(e2) { tp.scrollIntoView(false); } }
+      } catch(e) {}
+    }, 150);
+  }
+}
+
+function nav(d) { vM += d; if (vM > 11) { vM = 0; vY++; } if (vM < 0) { vM = 11; vY--; } rCal(); }
+
+/* ═══════════════════════════════════════════════════
+   DAY TAP POPUP (with safety limits)
+   ═══════════════════════════════════════════════════ */
+
+function tap(y, m, d) {
+  var dt = new Date(y, m, d), s = shift(dt), off = (s === 'off');
+  var labels = {
+    morning:'☀️ Morning (06–14)', evening:'🌅 Evening (14–22)',
+    night:'🌙 Night (22–06)', off:'🎉 DAY OFF', working:'💼 Working Day'
+  };
+  var bi = '';
+  if (off) {
+    var ss = new Date(dt.getTime()), safeA = 0;
+    while (shift(addDays(ss, -1)) === 'off' && safeA < 200) { ss = addDays(ss, -1); safeA++; }
+    var ee = new Date(dt.getTime()), safeB = 0;
+    while (shift(addDays(ee, 1)) === 'off' && safeB < 200) { ee = addDays(ee, 1); safeB++; }
+    var days = daysBetween(ss, ee) + 1;
+    var ps = shift(addDays(ss, -1));
+    var from = (ps === 'night') ? 'From ' + cfg.nightEnd + ' on ' + fs(ss) : 'All day from ' + fs(ss);
+    bi = '<div class="pop-row"><span class="pop-row-l">Off Block</span><span class="pop-row-v">' + fs(ss) + ' → ' + fs(ee) + '</span></div>' +
+         '<div class="pop-row"><span class="pop-row-l">Duration</span><span class="pop-row-v">' + days + ' days</span></div>' +
+         '<div class="pop-row"><span class="pop-row-l">Free From</span><span class="pop-row-v">' + from + '</span></div>';
+  }
+  var nd = new Date(dt.getTime());
+  for (var i = 1; i <= 30; i++) { nd = addDays(dt, i); if ((shift(nd) === 'off') !== (s === 'off')) break; }
+
+  var pb = document.getElementById('popBody');
+  if (pb) {
+    pb.innerHTML =
+      '<div class="pop-date">' + ff(dt) + '</div>' +
+      '<div class="pop-badge ' + (off ? 'off' : 'on') + '">' + (off ? '🎉 DAY OFF' : '💼 Working') + '</div>' +
+      '<div class="pop-rows">' +
+        (off ? bi : '<div class="pop-row"><span class="pop-row-l">Shift</span><span class="pop-row-v">' + (labels[s] || '💼 Working Day') + '</span></div>') +
+        '<div class="pop-row"><span class="pop-row-l">Weekend?</span><span class="pop-row-v">' + (wknd(dt) ? '✅ Yes' : '❌ No') + '</span></div>' +
+        '<div class="pop-row"><span class="pop-row-l">' + (off ? 'Back to Work' : 'Next Off') + '</span><span class="pop-row-v">' + fs(nd) + '</span></div>' +
+      '</div>';
+  }
+  var bg = document.getElementById('popBg');
+  if (bg) bg.classList.add('show');
+}
+
+function closePop(e) { var bg = document.getElementById('popBg'); if (e.target === bg) bg.classList.remove('show'); }
+
+/* ═══════════════════════════════════════════════════
+   BOOT (with global error catch)
+   ═══════════════════════════════════════════════════ */
+try {
+  init();
+} catch(err) {
+  var h = document.getElementById('hero');
+  if (h) {
+    h.innerHTML = '<div class="hero-label" style="color:#EF4444">⚠️ Error loading</div>' +
+      '<div style="font-size:13px;color:#9CA3AF;margin-top:8px">' + (err.message || 'Unknown error') + '</div>' +
+      '<div style="font-size:11px;color:#6B7280;margin-top:12px">Try opening directly in Safari</div>';
+  }
+}
+</script>
+</body>
+</html>
